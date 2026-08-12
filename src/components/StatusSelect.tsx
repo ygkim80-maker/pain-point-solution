@@ -22,6 +22,7 @@ export function StatusSelect({
     >
       <input type="hidden" name="painPointId" value={painPointId} />
       <select
+        key={status}
         name="status"
         defaultValue={status}
         disabled={isPending}
