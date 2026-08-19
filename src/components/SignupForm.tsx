@@ -39,12 +39,13 @@ export function SignupForm({ departmentOptions }: { departmentOptions: string[] 
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-neutral-700" htmlFor="name">
-          이름
+          닉네임
         </label>
         <input
           id="name"
           name="name"
           required
+          placeholder="다른 사람에게 보여질 이름 (실명이 아니어도 됩니다)"
           className="rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
         />
       </div>

@@ -17,6 +17,9 @@ export default async function LoginPage() {
           회원가입
         </Link>
       </p>
+      <p className="mt-1 text-sm text-neutral-500">
+        비밀번호를 잊으셨나요? 관리자에게 문의해 임시 비밀번호를 발급받으세요.
+      </p>
     </div>
   );
 }

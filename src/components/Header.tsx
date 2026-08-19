@@ -23,6 +23,17 @@ export async function Header() {
               >
                 새 페인포인트
               </Link>
+              <Link href="/stats" className="text-neutral-600 hover:text-neutral-900">
+                통계
+              </Link>
+              {user.isAdmin && (
+                <Link
+                  href="/admin/users"
+                  className="text-neutral-600 hover:text-neutral-900"
+                >
+                  관리자
+                </Link>
+              )}
               <span className="text-neutral-400">
                 {user.department}/{user.team} · {user.name}
               </span>

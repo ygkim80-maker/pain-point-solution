@@ -5,8 +5,17 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { createSession, destroySession } from "@/lib/auth";
-import { requireUser } from "@/lib/session";
-import { CATEGORIES, STATUS_ORDER, type PainPointStatus } from "@/lib/constants";
+import { requireUser, requireAdmin } from "@/lib/session";
+import { isBootstrapAdminUsername } from "@/lib/admin";
+import { notifySlack } from "@/lib/slack";
+import { CATEGORIES, STATUS_ORDER, STATUS_LABEL, type PainPointStatus } from "@/lib/constants";
+
+function appUrl() {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
+}
 
 export type ActionState = { error?: string };
 
@@ -34,7 +43,7 @@ export async function signup(_prevState: ActionState, formData: FormData): Promi
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { username, name, department, team, passwordHash },
+    data: { username, name, department, team, passwordHash, isAdmin: isBootstrapAdminUsername(username) },
   });
 
   await createSession(user.id);
@@ -53,6 +62,10 @@ export async function login(_prevState: ActionState, formData: FormData): Promis
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     return { error: "아이디 또는 비밀번호가 올바르지 않습니다." };
+  }
+
+  if (!user.isAdmin && isBootstrapAdminUsername(user.username)) {
+    await prisma.user.update({ where: { id: user.id }, data: { isAdmin: true } });
   }
 
   await createSession(user.id);
@@ -84,6 +97,10 @@ export async function createPainPoint(_prevState: ActionState, formData: FormDat
     data: { title, content, category, department, team, authorId: user.id },
   });
 
+  await notifySlack(
+    `🧩 새 페인포인트: *${title}*\n${department}/${team} · ${user.name}\n${appUrl()}/pain-points/${painPoint.id}`
+  );
+
   revalidatePath("/");
   redirect(`/pain-points/${painPoint.id}`);
 }
@@ -95,9 +112,16 @@ export async function addComment(formData: FormData) {
   const content = String(formData.get("content") ?? "").trim();
   if (!painPointId || !content) return;
 
-  await prisma.comment.create({
-    data: { content, painPointId, authorId: user.id },
-  });
+  const [, painPoint] = await Promise.all([
+    prisma.comment.create({ data: { content, painPointId, authorId: user.id } }),
+    prisma.painPoint.findUnique({ where: { id: painPointId }, select: { title: true } }),
+  ]);
+
+  if (painPoint) {
+    await notifySlack(
+      `💬 "${painPoint.title}"에 새 의견: ${user.name}\n${content}\n${appUrl()}/pain-points/${painPointId}#comments`
+    );
+  }
 
   revalidatePath(`/pain-points/${painPointId}`);
   redirect(`/pain-points/${painPointId}#comments`);
@@ -124,17 +148,46 @@ export async function toggleVote(formData: FormData) {
 }
 
 export async function updateStatus(formData: FormData) {
-  await requireUser();
+  await requireAdmin();
 
   const painPointId = String(formData.get("painPointId") ?? "");
   const status = String(formData.get("status") ?? "");
   if (!painPointId || !STATUS_ORDER.includes(status as PainPointStatus)) return;
 
-  await prisma.painPoint.update({
+  const painPoint = await prisma.painPoint.update({
     where: { id: painPointId },
     data: { status: status as PainPointStatus },
   });
 
+  await notifySlack(
+    `🔄 "${painPoint.title}" 상태가 [${STATUS_LABEL[status as PainPointStatus]}]로 변경되었습니다.\n${appUrl()}/pain-points/${painPointId}`
+  );
+
   revalidatePath("/");
   revalidatePath(`/pain-points/${painPointId}`);
+}
+
+function generateTempPassword() {
+  return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
+}
+
+export type ResetPasswordState = { error?: string; success?: { username: string; tempPassword: string } };
+
+export async function resetUserPassword(
+  _prevState: ResetPasswordState,
+  formData: FormData
+): Promise<ResetPasswordState> {
+  await requireAdmin();
+
+  const userId = String(formData.get("userId") ?? "");
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) {
+    return { error: "사용자를 찾을 수 없습니다." };
+  }
+
+  const tempPassword = generateTempPassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 10);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  return { success: { username: target.username, tempPassword } };
 }
