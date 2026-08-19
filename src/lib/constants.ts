@@ -23,23 +23,29 @@ export const STATUS_BADGE_CLASS: Record<PainPointStatus, string> = {
   RESOLVED: "bg-emerald-100 text-emerald-800 border-emerald-200",
 };
 
-export type ReactionType = "EMPATHY" | "SAME";
+export type ReactionType = "EMPATHY" | "SAME" | "WATCHING" | "CELEBRATE";
 
-export const REACTION_ORDER: ReactionType[] = ["EMPATHY", "SAME"];
+export const REACTION_ORDER: ReactionType[] = ["EMPATHY", "SAME", "WATCHING", "CELEBRATE"];
 
 export const REACTION_ICON: Record<ReactionType, string> = {
   EMPATHY: "🙌",
   SAME: "🙋",
+  WATCHING: "👀",
+  CELEBRATE: "🎉",
 };
 
 export const REACTION_LABEL: Record<ReactionType, string> = {
   EMPATHY: "공감",
   SAME: "저도요",
+  WATCHING: "확인",
+  CELEBRATE: "축하",
 };
 
 export const REACTION_LABEL_ACTIVE: Record<ReactionType, string> = {
   EMPATHY: "공감함",
   SAME: "저도 겪음",
+  WATCHING: "확인함",
+  CELEBRATE: "축하함",
 };
 
 export const TRENDING_WINDOW_DAYS = 3;

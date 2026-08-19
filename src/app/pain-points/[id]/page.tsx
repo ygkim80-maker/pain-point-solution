@@ -62,8 +62,8 @@ export default async function PainPointDetailPage({
           <span>{timeAgo(painPoint.createdAt)}</span>
         </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-4">
-          <div className="flex items-center gap-2">
+        <div className="mt-4 flex flex-col gap-3 border-t border-neutral-100 pt-4">
+          <div className="flex flex-wrap items-center gap-2">
             {REACTION_ORDER.map((type) => (
               <ReactionButton
                 key={type}

@@ -19,6 +19,8 @@ enum PainPointStatus {
 enum ReactionType {
   EMPATHY
   SAME
+  WATCHING
+  CELEBRATE
 }
 
 model User {

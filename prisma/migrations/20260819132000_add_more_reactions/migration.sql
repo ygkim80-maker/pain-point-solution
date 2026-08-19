@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "ReactionType" ADD VALUE 'WATCHING';
+ALTER TYPE "ReactionType" ADD VALUE 'CELEBRATE';
