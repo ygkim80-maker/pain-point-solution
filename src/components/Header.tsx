@@ -34,9 +34,13 @@ export async function Header() {
                   관리자
                 </Link>
               )}
-              <span className="text-neutral-400">
+              <Link
+                href="/me"
+                className="text-neutral-400 hover:text-neutral-700"
+                title="내 정보 수정"
+              >
                 {user.department}/{user.team} · {user.nickname}
-              </span>
+              </Link>
               <form action={logout}>
                 <button
                   type="submit"

@@ -16,6 +16,11 @@ enum PainPointStatus {
   RESOLVED
 }
 
+enum ReactionType {
+  EMPATHY
+  SAME
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -63,8 +68,9 @@ model Comment {
 }
 
 model Vote {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+  id        String       @id @default(cuid())
+  type      ReactionType @default(EMPATHY)
+  createdAt DateTime     @default(now())
 
   painPointId String
   painPoint   PainPoint @relation(fields: [painPointId], references: [id], onDelete: Cascade)
@@ -72,5 +78,5 @@ model Vote {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
-  @@unique([painPointId, userId])
+  @@unique([painPointId, userId, type])
 }

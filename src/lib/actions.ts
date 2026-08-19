@@ -8,7 +8,14 @@ import { createSession, destroySession } from "@/lib/auth";
 import { requireUser, requireAdmin } from "@/lib/session";
 import { isBootstrapAdminUsername } from "@/lib/admin";
 import { notifySlack } from "@/lib/slack";
-import { CATEGORIES, STATUS_ORDER, STATUS_LABEL, type PainPointStatus } from "@/lib/constants";
+import {
+  CATEGORIES,
+  STATUS_ORDER,
+  STATUS_LABEL,
+  REACTION_ORDER,
+  type PainPointStatus,
+  type ReactionType,
+} from "@/lib/constants";
 
 function appUrl() {
   return (
@@ -136,20 +143,21 @@ export async function addComment(formData: FormData) {
   redirect(`/pain-points/${painPointId}#comments`);
 }
 
-export async function toggleVote(formData: FormData) {
+export async function toggleReaction(formData: FormData) {
   const user = await requireUser();
 
   const painPointId = String(formData.get("painPointId") ?? "");
-  if (!painPointId) return;
+  const type = String(formData.get("type") ?? "");
+  if (!painPointId || !REACTION_ORDER.includes(type as ReactionType)) return;
 
   const existing = await prisma.vote.findUnique({
-    where: { painPointId_userId: { painPointId, userId: user.id } },
+    where: { painPointId_userId_type: { painPointId, userId: user.id, type: type as ReactionType } },
   });
 
   if (existing) {
     await prisma.vote.delete({ where: { id: existing.id } });
   } else {
-    await prisma.vote.create({ data: { painPointId, userId: user.id } });
+    await prisma.vote.create({ data: { painPointId, userId: user.id, type: type as ReactionType } });
   }
 
   revalidatePath("/");
@@ -199,4 +207,26 @@ export async function resetUserPassword(
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
 
   return { success: { username: target.username, tempPassword } };
+}
+
+export async function updateProfile(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const nickname = String(formData.get("nickname") ?? "").trim();
+  const department = String(formData.get("department") ?? "").trim();
+  const team = String(formData.get("team") ?? "").trim();
+
+  if (!name || !nickname || !department || !team) {
+    return { error: "모든 항목을 입력해주세요." };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { name, nickname, department, team },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/me");
+  redirect("/me?saved=1");
 }

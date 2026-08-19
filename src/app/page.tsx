@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { StatusBadge } from "@/components/StatusBadge";
-import { STATUS_LABEL, STATUS_ORDER, type PainPointStatus } from "@/lib/constants";
+import { STATUS_LABEL, STATUS_ORDER, trendingCutoff, type PainPointStatus } from "@/lib/constants";
 import { timeAgo } from "@/lib/format";
 
 type SearchParams = { department?: string; status?: string; sort?: string };
@@ -43,6 +43,34 @@ export default async function Home({
   ]);
 
   const departmentOptions = departments.map((d) => d.department);
+
+  if (sort === "trending" && painPoints.length > 0) {
+    const cutoff = trendingCutoff();
+    const ids = painPoints.map((p) => p.id);
+
+    const [recentVotes, recentComments] = await Promise.all([
+      prisma.vote.groupBy({
+        by: ["painPointId"],
+        where: { painPointId: { in: ids }, createdAt: { gte: cutoff } },
+        _count: { _all: true },
+      }),
+      prisma.comment.groupBy({
+        by: ["painPointId"],
+        where: { painPointId: { in: ids }, createdAt: { gte: cutoff } },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const score = new Map<string, number>();
+    for (const row of recentVotes) score.set(row.painPointId, (score.get(row.painPointId) ?? 0) + row._count._all);
+    for (const row of recentComments)
+      score.set(row.painPointId, (score.get(row.painPointId) ?? 0) + row._count._all);
+
+    painPoints.sort((a, b) => {
+      const diff = (score.get(b.id) ?? 0) - (score.get(a.id) ?? 0);
+      return diff !== 0 ? diff : b.createdAt.getTime() - a.createdAt.getTime();
+    });
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -153,6 +181,9 @@ function FilterBar({
       </FilterLink>
       <FilterLink href={buildHref({ sort: "votes" })} active={current.sort === "votes"}>
         공감순
+      </FilterLink>
+      <FilterLink href={buildHref({ sort: "trending" })} active={current.sort === "trending"}>
+        🔥 트렌딩
       </FilterLink>
     </div>
   );

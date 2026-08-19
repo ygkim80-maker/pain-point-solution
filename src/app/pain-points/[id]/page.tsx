@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusSelect } from "@/components/StatusSelect";
-import { VoteButton } from "@/components/VoteButton";
+import { ReactionButton } from "@/components/ReactionButton";
 import { CommentForm } from "@/components/CommentForm";
 import { timeAgo } from "@/lib/format";
+import { REACTION_ORDER } from "@/lib/constants";
 
 export default async function PainPointDetailPage({
   params,
@@ -20,7 +21,7 @@ export default async function PainPointDetailPage({
     where: { id },
     include: {
       author: { select: { nickname: true, department: true, team: true } },
-      votes: { select: { userId: true } },
+      votes: { select: { userId: true, type: true } },
       comments: {
         orderBy: { createdAt: "asc" },
         include: { author: { select: { nickname: true } } },
@@ -29,8 +30,6 @@ export default async function PainPointDetailPage({
   });
 
   if (!painPoint) notFound();
-
-  const hasVoted = painPoint.votes.some((v) => v.userId === user.id);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -64,11 +63,17 @@ export default async function PainPointDetailPage({
         </div>
 
         <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-4">
-          <VoteButton
-            painPointId={painPoint.id}
-            voteCount={painPoint.votes.length}
-            hasVoted={hasVoted}
-          />
+          <div className="flex items-center gap-2">
+            {REACTION_ORDER.map((type) => (
+              <ReactionButton
+                key={type}
+                painPointId={painPoint.id}
+                type={type}
+                count={painPoint.votes.filter((v) => v.type === type).length}
+                active={painPoint.votes.some((v) => v.userId === user.id && v.type === type)}
+              />
+            ))}
+          </div>
           {user.isAdmin && (
             <div className="flex items-center gap-2 text-sm text-neutral-500">
               <span>상태 변경</span>
