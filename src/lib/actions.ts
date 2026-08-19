@@ -22,11 +22,12 @@ export type ActionState = { error?: string };
 export async function signup(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const username = String(formData.get("username") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
+  const nickname = String(formData.get("nickname") ?? "").trim();
   const department = String(formData.get("department") ?? "").trim();
   const team = String(formData.get("team") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!username || !name || !department || !team) {
+  if (!username || !name || !nickname || !department || !team) {
     return { error: "모든 항목을 입력해주세요." };
   }
   if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
@@ -43,7 +44,15 @@ export async function signup(_prevState: ActionState, formData: FormData): Promi
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { username, name, department, team, passwordHash, isAdmin: isBootstrapAdminUsername(username) },
+    data: {
+      username,
+      name,
+      nickname,
+      department,
+      team,
+      passwordHash,
+      isAdmin: isBootstrapAdminUsername(username),
+    },
   });
 
   await createSession(user.id);
@@ -98,7 +107,7 @@ export async function createPainPoint(_prevState: ActionState, formData: FormDat
   });
 
   await notifySlack(
-    `🧩 새 페인포인트: *${title}*\n${department}/${team} · ${user.name}\n${appUrl()}/pain-points/${painPoint.id}`
+    `🧩 새 페인포인트: *${title}*\n${department}/${team} · ${user.nickname}\n${appUrl()}/pain-points/${painPoint.id}`
   );
 
   revalidatePath("/");
@@ -119,7 +128,7 @@ export async function addComment(formData: FormData) {
 
   if (painPoint) {
     await notifySlack(
-      `💬 "${painPoint.title}"에 새 의견: ${user.name}\n${content}\n${appUrl()}/pain-points/${painPointId}#comments`
+      `💬 "${painPoint.title}"에 새 의견: ${user.nickname}\n${content}\n${appUrl()}/pain-points/${painPointId}#comments`
     );
   }
 

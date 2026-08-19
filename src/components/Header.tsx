@@ -9,7 +9,7 @@ export async function Header() {
     <header className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
         <Link href="/" className="text-sm font-semibold text-neutral-900">
-          🧩 페인포인트 해결 채널
+          📍 핀포인트
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           {user ? (
@@ -35,7 +35,7 @@ export async function Header() {
                 </Link>
               )}
               <span className="text-neutral-400">
-                {user.department}/{user.team} · {user.name}
+                {user.department}/{user.team} · {user.nickname}
               </span>
               <form action={logout}>
                 <button

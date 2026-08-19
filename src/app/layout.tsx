@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "페인포인트 해결 채널",
+  title: "핀포인트",
   description: "부서/팀별 페인포인트를 공유하고 함께 해결책을 찾는 사내 협업 채널",
 };
 

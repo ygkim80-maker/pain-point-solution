@@ -19,11 +19,11 @@ export default async function PainPointDetailPage({
   const painPoint = await prisma.painPoint.findUnique({
     where: { id },
     include: {
-      author: { select: { name: true, department: true, team: true } },
+      author: { select: { nickname: true, department: true, team: true } },
       votes: { select: { userId: true } },
       comments: {
         orderBy: { createdAt: "asc" },
-        include: { author: { select: { name: true } } },
+        include: { author: { select: { nickname: true } } },
       },
     },
   });
@@ -58,7 +58,7 @@ export default async function PainPointDetailPage({
 
         <div className="mt-4 flex items-center gap-3 text-xs text-neutral-500">
           <span>
-            {painPoint.author.name} · {painPoint.author.department}/{painPoint.author.team}
+            {painPoint.author.nickname} · {painPoint.author.department}/{painPoint.author.team}
           </span>
           <span>{timeAgo(painPoint.createdAt)}</span>
         </div>
@@ -90,7 +90,7 @@ export default async function PainPointDetailPage({
               className="rounded-lg border border-neutral-200 bg-white p-3"
             >
               <div className="flex items-center gap-2 text-xs text-neutral-500">
-                <span className="font-medium text-neutral-700">{c.author.name}</span>
+                <span className="font-medium text-neutral-700">{c.author.nickname}</span>
                 <span>{timeAgo(c.createdAt)}</span>
               </div>
               <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">

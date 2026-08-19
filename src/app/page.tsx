@@ -35,7 +35,7 @@ export default async function Home({
       where,
       orderBy,
       include: {
-        author: { select: { name: true } },
+        author: { select: { nickname: true } },
         _count: { select: { comments: true, votes: true } },
       },
     }),
@@ -48,7 +48,7 @@ export default async function Home({
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">페인포인트 피드</h1>
+          <h1 className="text-xl font-semibold">핀포인트 피드</h1>
           <p className="mt-1 text-sm text-neutral-500">
             부서/팀의 불편함을 공유하고 댓글로 함께 해결책을 찾아보세요.
           </p>
@@ -94,7 +94,7 @@ export default async function Home({
                   {p.content}
                 </p>
                 <div className="mt-3 flex items-center gap-4 text-xs text-neutral-500">
-                  <span>{p.author.name}</span>
+                  <span>{p.author.nickname}</span>
                   <span>{timeAgo(p.createdAt)}</span>
                   <span>🙌 {p._count.votes}</span>
                   <span>💬 {p._count.comments}</span>

@@ -23,7 +23,10 @@ export default async function AdminUsersPage() {
           >
             <div>
               <p className="text-sm font-medium text-neutral-900">
-                {u.name} <span className="text-neutral-400">@{u.username}</span>{" "}
+                {u.nickname}{" "}
+                <span className="text-neutral-400">
+                  (실명: {u.name}) · @{u.username}
+                </span>{" "}
                 {u.isAdmin && (
                   <span className="ml-1 rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-white">
                     관리자

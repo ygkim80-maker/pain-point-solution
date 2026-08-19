@@ -39,13 +39,25 @@ export function SignupForm({ departmentOptions }: { departmentOptions: string[] 
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-neutral-700" htmlFor="name">
-          닉네임
+          이름
         </label>
         <input
           id="name"
           name="name"
           required
-          placeholder="다른 사람에게 보여질 이름 (실명이 아니어도 됩니다)"
+          placeholder="실명 (관리자만 확인 가능, 다른 사람에게는 보이지 않습니다)"
+          className="rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-neutral-700" htmlFor="nickname">
+          닉네임
+        </label>
+        <input
+          id="nickname"
+          name="nickname"
+          required
+          placeholder="글/댓글에 표시될 이름"
           className="rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
         />
       </div>
