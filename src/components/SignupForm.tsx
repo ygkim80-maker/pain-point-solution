@@ -12,6 +12,18 @@ export function SignupForm({ departmentOptions }: { departmentOptions: string[] 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-neutral-700" htmlFor="signupCode">
+          가입 코드
+        </label>
+        <input
+          id="signupCode"
+          name="signupCode"
+          autoComplete="off"
+          placeholder="사내 공유된 코드를 입력하세요 (없으면 관리자 문의)"
+          className="rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-neutral-700" htmlFor="username">
           아이디
         </label>
@@ -33,7 +45,9 @@ export function SignupForm({ departmentOptions }: { departmentOptions: string[] 
           name="password"
           type="password"
           required
+          minLength={8}
           autoComplete="new-password"
+          placeholder="8자 이상"
           className="rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
         />
       </div>

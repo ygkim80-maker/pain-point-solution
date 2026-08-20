@@ -1,12 +1,13 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { createSession, destroySession } from "@/lib/auth";
 import { requireUser, requireAdmin } from "@/lib/session";
-import { isBootstrapAdminUsername } from "@/lib/admin";
+import { isBootstrapAdminUsername, isSignupCodeValid } from "@/lib/admin";
 import { notifySlack } from "@/lib/slack";
 import {
   CATEGORIES,
@@ -33,15 +34,19 @@ export async function signup(_prevState: ActionState, formData: FormData): Promi
   const department = String(formData.get("department") ?? "").trim();
   const team = String(formData.get("team") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const signupCode = String(formData.get("signupCode") ?? "");
 
   if (!username || !name || !nickname || !department || !team) {
     return { error: "모든 항목을 입력해주세요." };
   }
+  if (!isSignupCodeValid(signupCode)) {
+    return { error: "가입 코드가 올바르지 않습니다. 관리자에게 문의해주세요." };
+  }
   if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
     return { error: "아이디는 영문/숫자/._- 조합 3~32자로 입력해주세요." };
   }
-  if (password.length < 4) {
-    return { error: "비밀번호는 4자 이상으로 설정해주세요." };
+  if (password.length < 8) {
+    return { error: "비밀번호는 8자 이상으로 설정해주세요." };
   }
 
   const existing = await prisma.user.findUnique({ where: { username } });
@@ -66,6 +71,9 @@ export async function signup(_prevState: ActionState, formData: FormData): Promi
   redirect("/");
 }
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
+
 export async function login(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -75,14 +83,30 @@ export async function login(_prevState: ActionState, formData: FormData): Promis
     return { error: "아이디 또는 비밀번호가 올바르지 않습니다." };
   }
 
+  if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+    const minutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+    return { error: `로그인 시도가 많아 잠시 잠겼습니다. ${minutes}분 후 다시 시도해주세요.` };
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
+    const failedLoginCount = user.failedLoginCount + 1;
+    const lockedOut = failedLoginCount >= MAX_LOGIN_ATTEMPTS;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        failedLoginCount: lockedOut ? 0 : failedLoginCount,
+        lockedUntil: lockedOut ? new Date(Date.now() + LOCKOUT_MS) : null,
+      },
+    });
     return { error: "아이디 또는 비밀번호가 올바르지 않습니다." };
   }
 
-  if (!user.isAdmin && isBootstrapAdminUsername(user.username)) {
-    await prisma.user.update({ where: { id: user.id }, data: { isAdmin: true } });
-  }
+  const isAdmin = user.isAdmin || isBootstrapAdminUsername(user.username);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { failedLoginCount: 0, lockedUntil: null, isAdmin },
+  });
 
   await createSession(user.id);
   redirect("/");
@@ -185,7 +209,11 @@ export async function updateStatus(formData: FormData) {
 }
 
 function generateTempPassword() {
-  return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = crypto.randomBytes(12);
+  let result = "";
+  for (const byte of bytes) result += alphabet[byte % alphabet.length];
+  return result;
 }
 
 export type ResetPasswordState = { error?: string; success?: { username: string; tempPassword: string } };

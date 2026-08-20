@@ -23,6 +23,13 @@ export default async function SignupPage() {
           로그인
         </Link>
       </p>
+      <p className="mt-1 text-xs text-neutral-400">
+        가입 시{" "}
+        <Link href="/privacy" className="underline">
+          개인정보 처리방침
+        </Link>
+        에 동의하는 것으로 간주됩니다.
+      </p>
     </div>
   );
 }
